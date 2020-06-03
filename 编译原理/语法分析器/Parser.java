@@ -21,7 +21,7 @@ import java.util.Stack;
  * 
  */
 public class Parser {
-	public static final String PATH = "./grammar4";// 文法
+	public static final String PATH = "./grammar8";// 文法
 	private static String START; // 开始符号
 	private static HashSet<String> VN, VT; // 非终结符号集、终结符号集
 	private static HashMap<String, ArrayList<ArrayList<String>>> MAP;// key:产生式左边 value:产生式右边(含多条)
@@ -32,12 +32,17 @@ public class Parser {
 
 	public static void main(String[] args) {
 		init(); // 初始化变量
-		File file = new File(PATH);
-		identifyVnVt(readFile(file));// 符号分类,并以key-value形式存于MAP中
+		identifyVnVt(readFile(new File(PATH)));// 符号分类,并以key-value形式存于MAP中
 		reformMap();// 消除左递归和提取左公因子
 		findFirst(); // 求FIRST集合
 		findFollow(); // 求FOLLOW集合
-
+		// 断点测试
+//		VN.toString();
+//		VT.toString();
+//		MAP.toString();
+//		FOLLOW.toString();
+//		FIRST.toString();
+//		oneLeftFirst.toString();
 		if (isLL1()) {
 			preForm(); // 构建预测分析表
 			// printAutoPre("aacbd"); // 示例推导
@@ -45,18 +50,10 @@ public class Parser {
 			Scanner in = new Scanner(System.in);
 			printAutoPre(in.nextLine());
 			in.close();
-
 		}
-		// 断点测试
-		VN.toString();
-		VT.toString();
-		MAP.toString();
-		FOLLOW.toString();
-		FIRST.toString();
-		oneLeftFirst.toString();
 	}
 
-	// 初始化
+	// 变量初始化
 	private static void init() {
 		VN = new HashSet<>();
 		VT = new HashSet<>();
@@ -116,70 +113,8 @@ public class Parser {
 			System.out.println("\t不是LL(1)文法,退出分析!");
 		return flag;
 	}
-
-	// 打印字符串的分析推导过程
-	public static void printAutoPre(String str) {
-		System.out.println(str + "的分析过程:");
-		Queue<String> queue = new LinkedList<>();// 句子拆分存于队列
-		for (int i = 0; i < str.length(); i++) {
-			String t = str.charAt(i) + "";
-			if (i + 1 < str.length() && (str.charAt(i + 1) == '\'' || str.charAt(i + 1) == '’')) {
-				t += str.charAt(i + 1);
-				i++;
-			}
-			queue.offer(t);
-		}
-		queue.offer("#");// "#"结束
-		// 分析栈
-		Stack<String> stack = new Stack<>();
-		stack.push("#");// "#"开始
-		stack.push(START);// 初态为开始符号
-		boolean isSuccess = false;
-		int step = 1;
-		while (!stack.isEmpty()) {
-			String left = stack.peek();
-			String right = queue.peek();
-			// System.out.println(left+" "+right);
-			// (1)分析成功
-			if (left.equals(right) && right.equals("#")) {
-				isSuccess = true;
-				System.out.println((step++) + "\t#\t#\t" + "分析成功");
-				break;
-			}
-			// (2)匹配栈顶和当前符号，均为终结符号，消去
-			if (left.equals(right)) {
-				String stackStr = String.join("", stack.toArray(new String[stack.size()]));
-				String queueStr = String.join("", queue.toArray(new String[queue.size()]));
-				System.out.println((step++) + "\t" + stackStr + "\t" + queueStr + "\t匹配成功" + left);
-				stack.pop();
-				queue.poll();
-				continue;
-			}
-			// (3)从预测表中查询
-			if (preMap.containsKey(left + right)) {
-				String stackStr = String.join("", stack.toArray(new String[stack.size()]));
-				String queueStr = String.join("", queue.toArray(new String[queue.size()]));
-				System.out.println((step++) + "\t" + stackStr + "\t" + queueStr + "\t用" + left + "→"
-						+ preMap.get(left + right) + "," + right + "逆序进栈");
-				stack.pop();
-				String tmp = preMap.get(left + right);
-				for (int i = tmp.length() - 1; i >= 0; i--) {// 逆序进栈
-					String t = tmp.charAt(i) + "";
-					if (i + 1 < tmp.length() && (tmp.charAt(i + 1) == '\'' || tmp.charAt(i + 1) == '’')) {
-						t += tmp.charAt(i + 1);
-						i++;
-					}
-					if (!t.equals("ε"))
-						stack.push(t);
-				}
-				continue;
-			}
-			break;// (4)其他情况失败并退出
-		}
-		if (!isSuccess)
-			System.out.println((step++) + "\t#\t#\t" + "分析失败");
-	}
-
+	
+	
 	// 构建预测分析表FORM
 	private static void preForm() {
 		HashSet<String> set = new HashSet<>();
@@ -242,9 +177,75 @@ public class Parser {
 			System.out.println();
 		}
 		System.out.println();
-		// FIRST.toString();
-		// oneLeftFirst.toString();
 	}
+
+
+	// 输入的单词串分析推导过程
+	public static void printAutoPre(String str) {
+		System.out.println(str + "的分析过程:");
+		Queue<String> queue = new LinkedList<>();// 句子拆分存于队列
+		for (int i = 0; i < str.length(); i++) {
+			String t = str.charAt(i) + "";
+			if (i + 1 < str.length() && (str.charAt(i + 1) == '\'' || str.charAt(i + 1) == '’')) {
+				t += str.charAt(i + 1);
+				i++;
+			}
+			queue.offer(t);
+		}
+		queue.offer("#");// "#"结束
+		// 分析栈
+		Stack<String> stack = new Stack<>();
+		stack.push("#");// "#"开始
+		stack.push(START);// 初态为开始符号
+		boolean isSuccess = false;
+		int step = 1;
+		while (!stack.isEmpty()) {
+			String left = stack.peek();
+			String right = queue.peek();
+			//System.out.println("left:"+left+" right:"+right);
+			// (1)分析成功
+			if (left.equals(right) && right.equals("#")) {
+				isSuccess = true;
+				System.out.println((step++) + "\t#\t#\t" + "分析成功");
+				break;
+			}
+			// (2)匹配栈顶和当前符号，均为终结符号，消去
+			if (left.equals(right)) {
+				String stackStr = String.join("", stack.toArray(new String[stack.size()]));
+				String queueStr = String.join("", queue.toArray(new String[queue.size()]));
+				System.out.println((step++) + "\t" + stackStr + "\t" + queueStr + "\t匹配成功" + left);
+				stack.pop();
+				queue.poll();
+				continue;
+			}
+			// (3)从预测表中查询
+			if (preMap.containsKey(left + right)) {
+				String stackStr = String.join("", stack.toArray(new String[stack.size()]));
+				String queueStr = String.join("", queue.toArray(new String[queue.size()]));
+				System.out.println((step++) + "\t" + stackStr + "\t" + queueStr + "\t用" + left + "→"
+						+ preMap.get(left + right) + "," + right + "逆序进栈");
+				stack.pop();
+				String tmp = preMap.get(left + right);
+				//System.out.println("tmp: "+tmp);
+				for (int i = tmp.length() - 1; i >= 0; i--) {// 逆序进栈
+					String t = "";
+					if (tmp.charAt(i) == '\'' || tmp.charAt(i) == '’') {
+						t = tmp.charAt(i-1)+""+tmp.charAt(i);
+						i--;
+					}else {
+						t=tmp.charAt(i)+"";
+					}
+					if (!t.equals("ε"))
+						stack.push(t);
+				}
+				continue;
+			}
+			break;// (4)其他情况失败并退出
+		}
+		if (!isSuccess)
+			System.out.println((step++) + "\t#\t#\t" + "分析失败");
+	}
+
 
 	// 符号分类
 	private static void identifyVnVt(ArrayList<String> list) {
@@ -522,16 +523,19 @@ public class Parser {
 			String left = it.next();
 			boolean flag = false;// 是否有左递归
 			ArrayList<ArrayList<String>> rightList = MAP.get(left);
-			ArrayList<String> newRightCell = new ArrayList<>(); // 新产生式的右边
 			ArrayList<String> oldRightCell = new ArrayList<>(); // 旧产生的右边
+			ArrayList<ArrayList<String>> newLeftNew = new ArrayList<>();// 存放新的左边和新的右边
+
 			// 消除直接左递归
 			for (int i = 0; i < rightList.size(); i++) {
+				ArrayList<String> newRightCell = new ArrayList<>(); // 新产生式的右边
 				if (rightList.get(i).get(0).equals(left)) {
 					for (int j = 1; j < rightList.get(i).size(); j++) {
 						newRightCell.add(rightList.get(i).get(j));
 					}
 					flag = true;
 					newRightCell.add(left + "\'");
+					newLeftNew.add(newRightCell);
 				} else {
 					for (int j = 0; j < rightList.get(i).size(); j++) {
 						oldRightCell.add(rightList.get(i).get(j));
@@ -541,8 +545,6 @@ public class Parser {
 			}
 			if (flag) {// 如果有左递归，则更新MAP
 				isReForm = true;
-				ArrayList<ArrayList<String>> newLeftNew = new ArrayList<>();// 存放新的左边和新的右边
-				newLeftNew.add(newRightCell);
 				newLeftNew.add(nullSign);
 				MAP.put(left + "\'", newLeftNew);
 				VN.add(left + "\'"); // 加入新的VN
@@ -573,6 +575,8 @@ public class Parser {
 				System.out.println();
 			}
 		}
+		MAP.toString();
+
 	}
 
 	// 从文件读文法
@@ -584,7 +588,7 @@ public class Parser {
 			String s = null;
 			while ((s = br.readLine()) != null) {
 				System.out.println("\t" + s);
-				result.add(s);
+				result.add(s.trim());
 			}
 			br.close();
 		} catch (Exception e) {
